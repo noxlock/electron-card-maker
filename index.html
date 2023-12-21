@@ -1,0 +1,195 @@
+<html>
+<head>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js" integrity="sha512-6lplKUSl86rUVprDIjiW8DuOniNX8UDoRATqZSds/7t6zCQZfaCe3e5zcGaQwxa8Kpn5RTM9Fvl3X2lLV4grPQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.css" integrity="sha512-C4k/QrN4udgZnXStNFS5osxdhVECWyhMsK1pnlk+LkC7yJGCqoYxW4mH3/ZXLweODyzolwdWSqmmadudSHMRLA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body {
+            background-color: black;
+            color: white;
+        }
+        img {
+            display: block;
+            max-width: 100%;
+            max-height: 100%;
+        }
+        #image-holder {
+            max-width: 600px;
+            max-height: 800px;
+        }
+        #aftercrop {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        .row {
+            margin-bottom: 20px;
+        }
+        .spacer {
+            margin-bottom: 20px;
+        }
+        #sentence-holder p {
+            display: inline-block;
+            font-size: 2.2em;
+        }
+        .selected-word {
+            background-color: slategray;
+        }
+        .selected-meaning {
+            background-color: slategray;
+        }
+        #word {
+            font-size: 2.5em;
+        }
+        #word p {
+            background-color: transparent;
+        }
+        #word ruby {
+            background-color: transparent;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="spacer"></div>
+        <div class="row justify-content-center">
+            <div id="sentence-holder" class="col-10">
+            </div>
+            <div class="col-2">
+                <label for="myfile">Select a file:</label>
+                <br/>
+                <input type="file" id="myfile" name="myfile">
+                <br/>
+                <button onclick="sendFilePath()">Load File</button>
+            </div>
+        </div>
+        <div class="row">
+            <section class="col-8">
+                <div class="row">
+                    <div class="col-4" id="word">
+                    </div>
+                    <div class="col-4" id="meanings">
+                    </div>
+                    
+                    <div class="col-4">
+                        <img id="aftercrop"/>
+                    </div>
+                </div>
+            </section>
+            <aside class="col-4">
+                <div>
+                    <div id="image-holder">
+                    <img id="cropme" src="./placeholder.jpg" />
+                    </div>
+                    <div class="row">
+                        <div class="col-6">
+                            <button onclick="crop()">Crop</button>
+                        </div>
+                        <div class="col-3 left-arrow">
+                            <svg xmlns="http://www.w3.org/2000/svg" height="2em" viewBox="0 0 448 512"><style>svg{fill:#ffffff}</style><path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.2 288 416 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-306.7 0L214.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg>
+                        </div>
+                        <div class="col-3 right-arrow">
+                            <svg xmlns="http://www.w3.org/2000/svg" height="2em" viewBox="0 0 448 512"> <style>svg{fill:#ffffff}</style><path d="M438.6 278.6c12.5-12.5 12.5-32.8 0-45.3l-160-160c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L338.8 224 32 224c-17.7 0-32 14.3-32 32s14.3 32 32 32l306.7 0L233.4 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l160-160z"/></svg>
+                        </div>
+                    </div>
+                </div>
+                
+            </aside>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-4">
+                <button id="viewcard">Open Card</button>
+                <button onclick="finish()">Make Card</button>
+                <button onclick="next()">Next</button>
+            </div>
+        </div>
+    </div>
+</body>
+<script>
+    let el = document.getElementById('cropme')
+    let c = new Cropper(el, {
+        viewMode: 2,
+    });
+    let pgRegex = /\/([^/]+)_(\d+)_(\d+)\.jpg$/;
+    let pgNum = [];
+
+    const crop = () => {
+        let canvas = c.getCroppedCanvas();
+        canvas.toBlob((blob) => {
+            const newImg = document.getElementById("aftercrop");
+            const url = URL.createObjectURL(blob);
+
+            newImg.onload = () => {
+                // no longer need to read the blob so it's revoked
+                URL.revokeObjectURL(url);
+            };
+
+            newImg.src = url;
+        });
+    }
+
+    const replace = (url) => {
+        console.log(pgNum)
+        c.replace(url)
+        matches = url.match(pgRegex)
+        pgNum = [matches[2], matches[3]]
+        return pgNum
+    }
+
+    const sendFilePath = () => {
+        let path = document.getElementById('myfile').files[0].path
+        open(path)
+    }
+
+    const highlight = (el, className) => {
+        // Get all elements with 'selected class'
+        let selectedElements = document.getElementsByClassName(className)
+        // If there is any, remove them
+        if (selectedElements.length > 0) {
+            selectedElements[0].className = ''
+        }
+        // Make our new selection
+        el.className = className
+    }
+
+    const select = async (el) => {
+        let word = document.getElementById('word')
+        let meanings = document.getElementById('meanings')
+        highlight(el.target, 'selected-word')
+
+        let res = await getMeanings(el)
+        meanings.innerHTML = ''
+        for (meaning of res) {
+            let p = document.createElement("p");
+            p.innerHTML = meaning
+            p.addEventListener("click", highlight.bind(this, p, 'selected-meaning'));
+            meanings.appendChild(p)
+        }
+        word.innerHTML = el.target.outerHTML
+    }
+
+    const finish = async () => {
+        let viewcard = document.getElementById('viewcard')
+        // Turn our cropped image into base64, so that we can send it
+        // to ankiconnect
+        canvas = c.getCroppedCanvas();
+        let blob = await new Promise(resolve => canvas.toBlob(resolve));
+        let binary = await new Promise((resolve) => {
+            let reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result)
+            reader.readAsDataURL(blob)
+        })
+        binary = binary.substr(binary.indexOf(',')+1)
+
+        let note_id = await makeNote(binary)
+        viewcard.addEventListener("click", viewNote.bind(this, note_id))
+
+    }
+
+    const viewNote = async (note_id) => {
+        openNote(note_id)
+    }
+</script>
+<script src="./renderer.js"></script>
+</html>
